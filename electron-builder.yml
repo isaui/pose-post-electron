@@ -1,0 +1,41 @@
+appId: com.pose.photobooth
+productName: Pose Photobooth
+copyright: Copyright © 2025
+
+directories:
+  buildResources: assets
+  output: dist
+
+files:
+  - "**/*"
+  - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
+  - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
+  - "!**/node_modules/*.d.ts"
+  - "!**/node_modules/.bin"
+  - "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}"
+  - "!.editorconfig"
+  - "!**/._*"
+  - "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}"
+  - "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}"
+  - "!**/{appveyor.yml,.travis.yml,circle.yml}"
+  - "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+
+win:
+  target: 
+    - portable
+  icon: assets/icon.ico
+  publisherName: Pose Photobooth
+
+mac:
+  target: dmg
+  category: public.app-category.photography
+  icon: assets/icon.icns
+
+linux:
+  target: AppImage
+  category: Graphics
+  icon: assets/icon.png
+
+compression: maximum
+
+asar: true
