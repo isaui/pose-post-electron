@@ -1,0 +1,39 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+enum OrderStatus {
+  QUEUED     // Order dalam antrian, belum diproses
+  PROCESSING // Order sedang diproses
+  COMPLETED  // Order selesai diproses dengan sukses
+  FAILED     // Order gagal diproses
+}
+
+model Order {
+  id           String       @id @default(uuid())
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  status       OrderStatus  @default(QUEUED)
+  retryCount   Int          @default(0)
+  photos       Photo[]
+  error        String?      // Error message jika gagal
+}
+
+model Photo {
+  id        String    @id @default(uuid())
+  order     Order     @relation(fields: [orderId], references: [id])
+  orderId   String
+  filePath  String    // Path ke file di Supabase storage
+  publicUrl String?   // URL publik untuk mengakses gambar
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
