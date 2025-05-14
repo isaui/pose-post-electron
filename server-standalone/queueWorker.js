@@ -184,6 +184,28 @@ async function processOrder(orderId) {
 
     if (allPhotosSuccessful) {
       console.log(`[Worker ${workerData.workerId}] Order ${orderId} completed successfully`);
+      
+      // Hapus file lokal yang sudah berhasil diupload
+      try {
+        console.log(`[Worker ${workerData.workerId}] Cleaning up local files for order ${orderId}...`);
+        
+        // Loop melalui semua foto yang berhasil diupload
+        for (const photo of order.photos) {
+          // Cek apakah file ada
+          if (fs.existsSync(photo.filePath)) {
+            // Hapus file lokal
+            fs.unlinkSync(photo.filePath);
+            console.log(`[Worker ${workerData.workerId}] Deleted local file: ${photo.filePath}`);
+          } else {
+            console.log(`[Worker ${workerData.workerId}] Local file not found: ${photo.filePath}`);
+          }
+        }
+        console.log(`[Worker ${workerData.workerId}] Local cleanup completed for order ${orderId}`);
+      } catch (cleanupError) {
+        console.error(`[Worker ${workerData.workerId}] Error during local file cleanup:`, cleanupError);
+        // Tidak mengubah status sukses meskipun ada error saat cleanup
+      }
+      
       return { success: true, orderId, processedPhotos, publicUrls };
     } else {
       console.log(`[Worker ${workerData.workerId}] Order ${orderId} partially completed (${successfulPhotos.length}/${processedPhotos.length} photos)`);

@@ -4,6 +4,11 @@
  */
 const { ipcRenderer } = require('electron');
 const { createUI } = require('./ui/index');
+const io = require('socket.io-client');
+
+// Socket.IO client reference
+let socket = null;
+let isConnected = false;
 
 /**
  * Initialize the preload script
@@ -17,7 +22,71 @@ function init() {
   // Setup UI injection when DOM loads
   setupUIInjection();
   
+  // Initialize Socket.IO connection
+  setupSocketConnection();
+  
   console.log('Preload script initialized successfully!');
+}
+
+/**
+ * Setup Socket.IO connection to the local DSLR server
+ */
+function setupSocketConnection() {
+  const LOCAL_SERVER_URL = 'http://localhost:9000';
+  
+  // Create socket connection (but don't connect automatically)
+  socket = io(LOCAL_SERVER_URL, { autoConnect: false });
+  
+  // Setup event handlers
+  socket.on('connect', () => {
+    console.log('[Electron Socket.IO] Connected to DSLR server');
+    isConnected = true;
+    // Dispatch connection status event to renderer
+    window.dispatchEvent(new CustomEvent('electron-connection-status', { 
+      detail: { connected: true } 
+    }));
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('[Electron Socket.IO] Disconnected from DSLR server');
+    isConnected = false;
+    // Dispatch connection status event to renderer
+    window.dispatchEvent(new CustomEvent('electron-connection-status', { 
+      detail: { connected: false } 
+    }));
+  });
+  
+  // Handle liveview event
+  socket.on('liveview', (base64Image) => {
+    // Forward liveview data to renderer
+    window.dispatchEvent(new CustomEvent('electron-liveview', { 
+      detail: base64Image 
+    }));
+  });
+  
+  // Handle capture event
+  socket.on('capture', (base64Image) => {
+    // Forward capture data to renderer
+    window.dispatchEvent(new CustomEvent('electron-capture', { 
+      detail: base64Image 
+    }));
+  });
+  
+  // Initially try to connect
+  tryConnectSocket();
+  
+  // Setup periodic reconnection attempts
+  setInterval(tryConnectSocket, 5000); // Try every 5 seconds if not connected
+}
+
+/**
+ * Try to connect Socket.IO if not already connected
+ */
+function tryConnectSocket() {
+  if (socket && !socket.connected) {
+    console.log('[Electron Socket.IO] Attempting to connect...');
+    socket.connect();
+  }
 }
 
 /**
@@ -73,7 +142,31 @@ function exposeAPI() {
     
     // Toggle server on/off
     toggleServer: async () => {
-      return await ipcRenderer.invoke('toggle-server');
+      const result = await ipcRenderer.invoke('toggle-server');
+      // Try to reconnect socket when server is toggled on
+      if (result.running) {
+        tryConnectSocket();
+      }
+      return result;
+    },
+    
+    // Get socket connection status
+    getSocketStatus: () => {
+      return {
+        connected: socket ? socket.connected : false
+      };
+    },
+    
+    // Force socket reconnection
+    reconnectSocket: () => {
+      if (socket) {
+        if (socket.connected) {
+          socket.disconnect();
+        }
+        setTimeout(() => socket.connect(), 500);
+        return { attempted: true };
+      }
+      return { attempted: false };
     },
     
     // Generic reverse proxy for any endpoint
@@ -152,7 +245,19 @@ function exposeAPI() {
     testAPI: async () => {
       console.log('Testing API endpoints:');
       console.log('isDSLRActive:', await window.poseAPI.isDSLRActive());
+      console.log('Socket Status:', window.poseAPI.getSocketStatus());
       console.log('All endpoints should now be accessible via window.poseAPI');
+    },
+    testEvents: () => {
+      console.log('Manually emitting test events');
+      // Emit test events
+      window.dispatchEvent(new CustomEvent('electron-connection-status', { 
+        detail: { connected: true } 
+      }));
+      window.dispatchEvent(new CustomEvent('electron-liveview', { 
+        detail: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AVIP/2Q==' 
+      }));
+      console.log('Test events dispatched');
     },
     // Queue Manager functions
     showQueueManager: () => {

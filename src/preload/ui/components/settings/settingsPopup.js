@@ -646,7 +646,7 @@ function createSettingsPopup() {
 
   // Add version text at the bottom
   const versionText = document.createElement('div');
-  versionText.textContent = 'Version 1.0.0';
+  versionText.textContent = 'Version 1.0.1';
   versionText.style.cssText = `
     text-align: center;
     font-size: 12px;
