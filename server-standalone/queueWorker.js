@@ -45,6 +45,9 @@ async function uploadImageToSupabase(filePath) {
       .from('reflect')
       .getPublicUrl(fileName);
 
+    console.log('[Worker ' + workerData.workerId + '] Getting public URL for:', fileName);
+    console.log('[Worker ' + workerData.workerId + '] URL data:', urlData);
+
     return {
       filePath: fileName,
       publicUrl: urlData.publicUrl
@@ -80,26 +83,23 @@ async function processOrder(orderId) {
     
     const photoProcessingPromises = order.photos.map(async (photo) => {
       try {
-        // Jika foto belum punya publicUrl, upload ke Supabase
-        if (!photo.publicUrl) {
-          console.log(`[Worker ${workerData.workerId}] Uploading image to Supabase: ${photo.filePath}`);
-          
-          // Upload ke Supabase
-          const { filePath, publicUrl } = await uploadImageToSupabase(photo.filePath);
-          
-          // Update record di database
-          await prisma.photo.update({
-            where: { id: photo.id },
-            data: { 
-              filePath,
-              publicUrl 
-            }
-          });
-          
-          return { id: photo.id, filePath, publicUrl, success: true };
-        } else {
-          return { ...photo, success: true };
-        }
+        // HOTFIX: Always upload to Supabase regardless of whether publicUrl exists
+        console.log(`[Worker ${workerData.workerId}] Uploading image to Supabase: ${photo.filePath}`);
+        
+        // Upload ke Supabase
+        const { filePath, publicUrl } = await uploadImageToSupabase(photo.filePath);
+        
+        // Update record di database
+        await prisma.photo.update({
+          where: { id: photo.id },
+          data: { 
+            filePath,
+            publicUrl 
+          }
+        });
+        
+        return { id: photo.id, filePath, publicUrl, success: true };
+      
       } catch (photoError) {
         console.error(`[Worker ${workerData.workerId}] Error processing photo ${photo.id}:`, photoError);
         return { id: photo.id, success: false, error: photoError.message };
