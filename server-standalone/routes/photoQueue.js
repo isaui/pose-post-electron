@@ -130,7 +130,7 @@ router.post('/retry-order', async (req, res) => {
     }
     
     // Ambil order dengan foto-fotonya
-    const order = await orderQueueService.getOrder(orderId);
+    const order = await orderQueueService.getOrderById(orderId);
     
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });

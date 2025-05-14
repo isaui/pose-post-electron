@@ -2,8 +2,12 @@
  * Queue Processor Manager
  * Manages worker threads untuk memproses order dalam queue
  */
-const { Worker } = require('worker_threads');
 const path = require('path');
+
+// Load environment variables from .env file
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+
+const { Worker } = require('worker_threads');
 
 // Import services
 const orderQueueService = require('./services/photoQueueService');
@@ -21,6 +25,8 @@ const processingOrders = new Set(); // set of orderIds currently being processed
 
 // Lock untuk mencegah race condition saat check queue
 let checkQueueLock = false;
+
+
 
 /**
  * Initialize a single worker thread

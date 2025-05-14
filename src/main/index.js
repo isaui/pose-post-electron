@@ -34,9 +34,11 @@ function createWindow() {
   // Load the Next.js app from Railway
   mainWindow.loadURL('https://pose-photobooth-hotfix.up.railway.app');
 
-  mainWindow.webContents.openDevTools();
   // Remove default menu bar
   mainWindow.setMenuBarVisibility(false);
+  
+  // Ensure the window is fullscreen
+  mainWindow.setFullScreen(true);
   
   // Log app start
   console.log('Pose Photobooth Electron started');

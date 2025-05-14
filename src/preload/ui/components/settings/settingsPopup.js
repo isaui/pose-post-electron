@@ -609,6 +609,71 @@ function createSettingsPopup() {
   paymentSection.appendChild(bypassPaymentBtn);
   adminContent.appendChild(paymentSection);
 
+  // Logout section
+  const logoutSection = document.createElement('div');
+  logoutSection.style.cssText = `
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    border-left: 3px solid #ff5252;
+  `;
+
+  // Logout section title
+  const logoutTitle = document.createElement('h5');
+  logoutTitle.textContent = 'Account';
+  logoutTitle.style.cssText = `
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ff5252;
+  `;
+  logoutSection.appendChild(logoutTitle);
+
+  // Logout section description
+  const logoutDesc = document.createElement('p');
+  logoutDesc.textContent = 'Sign out from your current session.';
+  logoutDesc.style.cssText = `
+    margin: 0 0 15px 0;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+  `;
+  logoutSection.appendChild(logoutDesc);
+
+  // Create logout button
+  const logoutBtn = document.createElement('button');
+  logoutBtn.className = 'admin-action-btn danger';
+  logoutBtn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+      <polyline points="16 17 21 12 16 7"></polyline>
+      <line x1="21" y1="12" x2="9" y2="12"></line>
+    </svg>
+    Logout
+  `;
+
+  // Add click event to logout button
+  logoutBtn.addEventListener('click', () => {
+    // Create and dispatch a logout event
+    const logoutEvent = new CustomEvent('logout', {
+      bubbles: true,
+      detail: {
+        timestamp: Date.now()
+      }
+    });
+    
+    // Dispatch the event
+    window.dispatchEvent(logoutEvent);
+    
+    // Close the popup
+    popup.style.display = 'none';
+    
+    console.log('Logout event emitted');
+  });
+
+  logoutSection.appendChild(logoutBtn);
+  adminContent.appendChild(logoutSection);
+
   // Add server and admin content to popup
   popup.appendChild(serverTabContent);
   popup.appendChild(adminContent);
@@ -646,7 +711,7 @@ function createSettingsPopup() {
 
   // Add version text at the bottom
   const versionText = document.createElement('div');
-  versionText.textContent = 'Version 1.0.1';
+  versionText.textContent = 'Version 1.0.2';
   versionText.style.cssText = `
     text-align: center;
     font-size: 12px;

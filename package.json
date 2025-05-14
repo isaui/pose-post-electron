@@ -1,6 +1,6 @@
 {
   "name": "pose-photobooth-lite",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Lightweight Electron wrapper for Pose Photobooth",
   "main": "src/main/index.js",
   "scripts": {
@@ -11,6 +11,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@types/dotenv": "^8.2.3",
     "electron": "^29.0.1",
     "electron-builder": "^24.9.1"
   },
