@@ -71,7 +71,7 @@ let connectedClients = 0;
 let isLiveViewEnabled = false; // Flag to track if live view should be active
 
 io.on('connection', (socket) => {
-  console.log('New client connected');
+  console.log('client connected');
   connectedClients++;
   
   // No automatic live view start/stop here - controlled via REST API only
