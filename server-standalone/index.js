@@ -68,37 +68,20 @@ const io = socketIo(server, {
 let camera = null
 let liveViewInterval = null;
 let connectedClients = 0;
+let isLiveViewEnabled = false; // Flag to track if live view should be active
 
 io.on('connection', (socket) => {
   console.log('New client connected');
   connectedClients++;
   
-  // Start live view when first client connects
-  if (connectedClients === 1 && camera) {
-    console.log('Starting live view for first client');
-    setupLiveView();
-  }
+  // No automatic live view start/stop here - controlled via REST API only
   
   socket.on('disconnect', () => {
     console.log('Client disconnected');
     connectedClients--;
     
-    // Stop live view when last client disconnects
-    if (connectedClients === 0 && liveViewInterval) {
-      console.log('Stopping live view - no more clients connected');
-      clearInterval(liveViewInterval);
-      liveViewInterval = null;
-      
-      // Stop camera live view mode
-      if (camera && camera.getProperty(CameraProperty.ID.Evf_Mode).available) {
-        try {
-          camera.stopLiveView();
-          console.log('Camera live view stopped');
-        } catch (e) {
-          console.log('Error stopping camera live view:', e);
-        }
-      }
-    }
+    // Only log client count changes, don't automatically stop live view
+    console.log(`Clients remaining: ${connectedClients}`);
   });
 });
 
@@ -140,7 +123,9 @@ async function releaseCamera() {
         clearInterval(liveViewInterval);
         liveViewInterval = null;
       }
-
+      
+      // Reset live view state
+      isLiveViewEnabled = false;
       
       // Stop live view if running
       try {
@@ -204,6 +189,7 @@ function setupLiveView() {
   try {
     console.log('Starting camera live view mode');
     camera.startLiveView();
+    isLiveViewEnabled = true;
     
     liveViewInterval = setInterval(() => {
       try {
@@ -424,6 +410,57 @@ app.post('/capture', (req, res) => {
      return res.json({"message": "wait for taking picture..."})
   }
   return res.status(500).json({"message": "there is no camera here..."});
+});
+
+// New REST API endpoint to start the live view
+app.post('/api/liveview/start', (req, res) => {
+  if (!camera) {
+    return res.status(500).json({ success: false, message: 'No camera connected' });
+  }
+  
+  const result = setupLiveView();
+  if (result) {
+    return res.json({ success: true, message: 'Live view started successfully' });
+  } else {
+    return res.status(500).json({ success: false, message: 'Failed to start live view' });
+  }
+});
+
+// New REST API endpoint to stop the live view
+app.post('/api/liveview/stop', (req, res) => {
+  if (!camera) {
+    return res.status(500).json({ success: false, message: 'No camera connected' });
+  }
+  
+  try {
+    // Stop live view interval if exists
+    if (liveViewInterval) {
+      clearInterval(liveViewInterval);
+      liveViewInterval = null;
+    }
+    
+    // Set the flag to indicate live view is disabled
+    isLiveViewEnabled = false;
+    
+    // Stop camera live view mode
+    if (camera.getProperty(CameraProperty.ID.Evf_Mode).available) {
+      camera.stopLiveView();
+    }
+    
+    return res.json({ success: true, message: 'Live view stopped successfully' });
+  } catch (error) {
+    console.error('Error stopping live view:', error);
+    return res.status(500).json({ success: false, message: 'Error stopping live view' });
+  }
+});
+
+// New REST API endpoint to get live view status
+app.get('/api/liveview/status', (req, res) => {
+  return res.json({
+    enabled: isLiveViewEnabled, 
+    active: liveViewInterval !== null,
+    clients: connectedClients
+  });
 });
 // Import Queue Processor Manager
 const queueProcessor = require('./queueProcessor');
